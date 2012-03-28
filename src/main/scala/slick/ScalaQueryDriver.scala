@@ -56,8 +56,8 @@ object scala2scalaquery{
   def apply( tree:Tree, scope : Scope = Scope() ) : Query = {
     val reporter = new ConsoleReporter(new Settings)
     val toolbox = new ToolBox(reporter,"")
-//    val typed_tree = toolbox.typeCheck(tree.asInstanceOf[reflect.runtime.Mirror.Tree]  ).asInstanceOf[reflect.mirror.Tree]
-    val typed_tree = toolbox.typeCheck(tree)
+    val typed_tree = toolbox.typeCheck(tree.asInstanceOf[reflect.runtime.Mirror.Tree]  ).asInstanceOf[reflect.mirror.Tree]
+//    val typed_tree = toolbox.typeCheck(tree)
     scala2scalaquery_typed( removeTypeAnnotations(typed_tree), scope )
   }
   private def scala2scalaquery_typed( tree:Tree, scope : Scope ) : Query = {

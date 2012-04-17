@@ -5,9 +5,6 @@ class ScalaQueryDriver extends Driver{
 object scala2scalaquery{
 
   import scala.reflect.mirror._
-  import scala.reflect.runtime.Mirror.ToolBox
-  import scala.tools.nsc.reporters._
-  import scala.tools.nsc.Settings
   
   import org.scalaquery.ql.extended.{ExtendedTable => Table}
   import org.scalaquery.ql._
@@ -54,8 +51,7 @@ object scala2scalaquery{
     this.apply(tree,queryable.query.scope)
   }
   def apply( tree:Tree, scope : Scope = Scope() ) : Query = {
-    val reporter = new ConsoleReporter(new Settings)
-    val toolbox = new ToolBox(reporter,"")
+    val toolbox = mkToolBox(mkConsoleReporter(),"")
     val typed_tree = toolbox.typeCheck(tree.asInstanceOf[reflect.runtime.Mirror.Tree]  ).asInstanceOf[reflect.mirror.Tree]
 //    val typed_tree = toolbox.typeCheck(tree)
     scala2scalaquery_typed( removeTypeAnnotations(typed_tree), scope )
@@ -69,8 +65,8 @@ object scala2scalaquery{
       case Literal(Constant(x:String)) => ConstColumn[String](x)
       case Literal(Constant(x:Double)) => ConstColumn[Double](x)
 
-     case node@Ident(name) if node.symbol.isInstanceOf[scala.reflect.internal.Symbols#FreeVar] =>
-       node.symbol.asInstanceOf[scala.reflect.internal.Symbols#FreeVar].value match{
+     case node@Ident(name) if node.symbol.isInstanceOf[scala.reflect.internal.Symbols#FreeTerm] =>
+       node.symbol.asInstanceOf[scala.reflect.internal.Symbols#FreeTerm].value match{
           case q:Queryable[_] => q.query
           case x => s2sq( Literal(Constant(x)) )
         }
@@ -111,7 +107,7 @@ object scala2scalaquery{
         
       // match queryable methods
       case Apply(Select(scala_lhs,term),Function( arg::Nil, body )::Nil) 
-        if scala_lhs.tpe.erasedType <:< classToType(classOf[Queryable[_]]).erasedType
+        if scala_lhs.tpe.erasure <:< classToType(classOf[Queryable[_]]).erasure
         => 
         val sq_lhs = s2sq( scala_lhs ).node
         val sq_symbol = new sq.AnonSymbol
@@ -121,7 +117,7 @@ object scala2scalaquery{
                 case "_filter_placeholder"     => sq.Filter( sq_symbol, sq_lhs, rhs.node )
                 case "_map_placeholder"        => sq.Bind( sq_symbol, sq_lhs, sq.Pure(rhs.node) )
                 case "_flatMap_placeholder"    => sq.Bind( sq_symbol, sq_lhs, rhs.node )
-                case e => throw new UnsupportedMethodException( scala_lhs.tpe.erasedType+"."+term.decoded )
+                case e => throw new UnsupportedMethodException( scala_lhs.tpe.erasure+"."+term.decoded )
               },
               new_scope
           )

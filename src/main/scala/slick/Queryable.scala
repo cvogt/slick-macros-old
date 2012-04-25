@@ -7,7 +7,9 @@ import scala.reflect.makro.Context
 object Queryable{
   def apply = new Queryable[Any](null)
   def factory[S]( projection:scala.reflect.mirror.Expr[Any] ) : Any = {
-    assert( ! scala.reflect.mirror.showRaw(projection.tree).contains( """newTermName("$mr")""" ) )
+    import scala.reflect.mirror._
+    println(showRaw(projection.tree))
+    assert( ! showRaw(projection.tree).contains( "eval" ) )
     null
   }
 }
@@ -45,7 +47,7 @@ object QueryableMacros{
        ).asInstanceOf[Tree]
       )))
     val res = c.reify{ Queryable.factory[S]( reifiedExpression.eval )}
-    println(showRaw(res.tree.asInstanceOf[c.mirror.Tree]))
+    //println(showRaw(res.tree.asInstanceOf[c.mirror.Tree]))
     res
   }
 
